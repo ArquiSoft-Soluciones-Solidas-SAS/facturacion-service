@@ -80,7 +80,7 @@ DATABASES = {
         'NAME': 'facturacion_service',
         'USER': 'microservicios_user',
         'PASSWORD': 'password',
-        'HOST': 'localhost',
+        'HOST': '10.128.0.82',
         'PORT': '5432',
     }
 }
