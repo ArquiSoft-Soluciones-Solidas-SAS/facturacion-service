@@ -65,10 +65,10 @@ def generar_recibos_cobro_hasta_actualidad():
     estudiantes = obtener_estudiantes()
     detalles_cobro_data = obtener_detalles_cobro()  # Lista de detalles de cobro
 
-    # Recorrer cada estudiante
-    for estudiante in estudiantes:
+    # Hacemos prueba con el primer estudiante
+    estudiante = estudiantes[0]
         # Recorrer cada mes en la enumeración
-        for mes_nombre, mes_num in MESES:
+    for mes_nombre, mes_num in MESES:
             # Solo generar recibos hasta el mes actual
             if mes_num > mes_actual:
                 break  # Salir del bucle si el mes es posterior al actual
@@ -119,7 +119,6 @@ def generar_recibos_cobro_hasta_actualidad():
                     detalles_cobro=detalles
                 )
                 print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
-                print(f"Con los detalles de cobro {recibo.detalles_cobro}")
             except Exception as e:
                 print(f"Error al crear el recibo: {e}")
 
