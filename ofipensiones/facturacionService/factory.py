@@ -78,7 +78,7 @@ def generar_recibos_cobro_hasta_actualidad():
                 detalle for detalle in detalles_cobro_data
                 if detalle["mes"] == mes_nombre and detalle["cursoId"] == estudiante["cursoEstudianteId"]
             ]
-            print("detalles cobro del estudiante con id " + estudiante["id"] + " y mes " + mes_nombre + ": " + str(detalles_cobro))
+            print("detalles cobro del estudiante con id " + estudiante["id"] + " y mes " + mes_nombre + " encontrados, son de tamaño: " + str(len(detalles_cobro)))
 
             # Solo continuar si hay detalles de cobro para ese mes
             if not detalles_cobro:
