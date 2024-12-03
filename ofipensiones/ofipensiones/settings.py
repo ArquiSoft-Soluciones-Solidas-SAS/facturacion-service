@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'facturacionService'
+    'facturacionService',
+    'dj_cqrs',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +131,12 @@ PATH_CRONOGRAMAS = PATH_API_GATEWAY + "/cronogramas"
 PATH_ESTUDIANTES = PATH_API_GATEWAY + "/estudiantes"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CQRS settings
+CQRS = {
+    'transport': 'dj_cqrs.transport.RabbitMQTransport',
+    'host': '10.142.0.12',
+    'port': 5672,
+    'user': 'microservicios_user',
+    'password': 'password',
+}
