@@ -16,7 +16,7 @@ def getRecibosCobro(request):
             "monto" : recibo.nmonto,
             "detalle": recibo.detalle,
             "estudianteId": str(recibo.estudianteId),
-            "detallesCobro": [str(detalle.id) for detalle in recibo.detalles_cobro.all()]
+            "detallesCobro": [str(detalle.id) for detalle in recibo.detalles_cobro]
         })
     return JsonResponse({"recibos_cobro": resultado})
 
