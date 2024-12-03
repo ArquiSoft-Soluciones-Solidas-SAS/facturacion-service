@@ -125,5 +125,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 PATH_API_GATEWAY = "http://" + os.environ.get("KONG_HOST", "10.128.0.81") + ":" + os.environ.get("KONG_PORT", "8000")
+PATH_INSTITUCIONES = PATH_API_GATEWAY + "/instituciones"
+PATH_CRONOGRAMAS = PATH_API_GATEWAY + "/cronogramas"
+PATH_ESTUDIANTES = PATH_API_GATEWAY + "/estudiantes"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
