@@ -47,7 +47,6 @@ def obtener_detalles_filter(curso_id, mes_nombre):
         return []
     detalles = r.json()["detalles"]
     print(f"Detalles de cobro obtenidos exitosamente para el estudiante {curso_id} en el mes {mes_nombre}.")
-    print("Detalles: ", detalles)
     return detalles
 
 
@@ -62,58 +61,66 @@ def generar_recibos_cobro_hasta_actualidad():
 
     # Iniciar una transacción
     with (transaction.atomic()):
-        # Obtener todos los estudiantes de todas las instituciones
-        estudiantes = obtener_estudiantes()
+        try:
+            # Obtener todos los estudiantes de todas las instituciones
+            estudiantes = obtener_estudiantes()
 
-        # Recorrer cada estudiante
-        for estudiante in estudiantes:
-            # Recorrer cada mes en la enumeración
-            for mes_nombre, mes_num in MESES:
-                # Solo generar recibos hasta el mes actual
-                if mes_num > mes_actual:
-                    break  # Salir del bucle si el mes es posterior al actual
+            # Recorrer cada estudiante
+            for estudiante in estudiantes:
+                # Recorrer cada mes en la enumeración
+                for mes_nombre, mes_num in MESES:
+                    # Solo generar recibos hasta el mes actual
+                    if mes_num > mes_actual:
+                        break  # Salir del bucle si el mes es posterior al actual
 
-                # Obtener los detalles de cobro para el mes actual
-                detalles_cobro = obtener_detalles_filter(estudiante["cursoEstudianteId"], mes_nombre)
+                    # Obtener los detalles de cobro para el mes actual
+                    detalles_cobro = obtener_detalles_filter(estudiante["cursoEstudianteId"], mes_nombre)
 
-                # Solo continuar si hay detalles de cobro para ese mes
-                if not detalles_cobro:
-                    print(f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
-                    continue
+                    # Solo continuar si hay detalles de cobro para ese mes
+                    if not detalles_cobro:
+                        print(f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
+                        continue
 
-                # Transformar los detalles a la estructura requerida
-                detalles = []
-                for detalle in detalles_cobro:
-                    detalles.append({
-                        "id": str(detalle["id"]),
-                        "mes": detalle["mes"],
-                        "valor": str(detalle["valor"]),
-                        "fechaCausacion": detalle["fechaCausacion"],
-                        "fechaLimite": detalle["fechaLimite"],
-                        "frecuencia": detalle.get("frecuencia", "N/A")
-                    })
+                    # Transformar los detalles a la estructura requerida
+                    detalles = []
+                    for detalle in detalles_cobro:
+                        detalles.append({
+                            "id": str(detalle["id"]),
+                            "mes": detalle["mes"],
+                            "valor": str(detalle["valor"]),
+                            "fechaCausacion": detalle["fechaCausacion"],
+                            "fechaLimite": detalle["fechaLimite"],
+                            "frecuencia": detalle.get("frecuencia", "N/A")
+                        })
 
-                # Calcular el monto total de los detalles de cobro
-                total_monto = sum(float(detalle["valor"]) for detalle in detalles)
+                    # Calcular el monto total de los detalles de cobro
+                    total_monto = sum(float(detalle["valor"]) for detalle in detalles)
 
-                if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
-                    print(f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
-                    continue
+                    if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
+                        print(f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
+                        continue
 
-                # Crear un nuevo recibo de cobro
-                recibo = ReciboCobro.objects.create(
-                    fecha=fecha_actual,
-                    nmonto=total_monto,  # Asegúrate de establecer nmonto aquí
-                    detalle=(
-                        f"Recibo de cobro para el mes de {mes_nombre}, que le corresponde a {estudiante['nombreEstudiante']}, "
-                        f"del curso con id {estudiante['cursoEstudianteId']}, "
-                        f"de la institución {estudiante['nombreInstitucion']}."
-                    ),
-                    estudianteId=estudiante["id"],
-                    detalles_cobro=detalles  # Asignar la lista de detalles
-                )
+                    # Crear un nuevo recibo de cobro
+                    try:
+                        recibo = ReciboCobro.objects.create(
+                            fecha=fecha_actual,
+                            nmonto=total_monto,
+                            detalle=(
+                                f"Recibo de cobro para el mes de {mes_nombre}, que le corresponde a {estudiante['nombreEstudiante']}, "
+                                f"del curso con id {estudiante['cursoEstudianteId']}, "
+                                f"de la institución {estudiante['nombreInstitucion']}."
+                            ),
+                            estudianteId=estudiante["id"],
+                            detalles_cobro=detalles
+                        )
+                        print(f"Recibo {recibo.id} generado.")
+                    except Exception as e:
+                        print(f"Error al crear el recibo: {e}")
 
-                print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+                    print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+        except Exception as e:
+            print(f"Error dentro de la transacción: {e}")
+
 
 def generar_recibos_pago():
     """
