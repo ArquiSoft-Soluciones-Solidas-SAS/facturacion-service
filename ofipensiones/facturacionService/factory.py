@@ -63,7 +63,7 @@ def generar_recibos_cobro_hasta_actualidad():
 
     # Obtener todos los estudiantes de todas las instituciones
     estudiantes = obtener_estudiantes()
-    detalles_cobro = obtener_detalles_cobro()
+    detalles_cobro_data = obtener_detalles_cobro()  # Lista de detalles de cobro
 
     # Recorrer cada estudiante
     for estudiante in estudiantes:
@@ -73,14 +73,16 @@ def generar_recibos_cobro_hasta_actualidad():
             if mes_num > mes_actual:
                 break  # Salir del bucle si el mes es posterior al actual
 
-            # Obtener los detalles de cobro para el mes actual, haciendo un filter por mes_nombre y por cursoEstudianteId
-            detalles_cobro = [detalle for detalle in detalles_cobro if detalle["mes"] == mes_nombre and detalle["cursoId"] == estudiante["cursoEstudianteId"]]
+            # Filtrar los detalles de cobro para ese mes y curso del estudiante
+            detalles_cobro = [
+                detalle for detalle in detalles_cobro_data
+                if detalle["mes"] == mes_nombre and detalle["cursoId"] == estudiante["cursoEstudianteId"]
+            ]
             print("detalles cobro del estudiante con id " + estudiante["id"] + " y mes " + mes_nombre + ": " + str(detalles_cobro))
 
             # Solo continuar si hay detalles de cobro para ese mes
             if not detalles_cobro:
-                print(
-                    f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
+                print(f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
                 continue
 
             # Transformar los detalles a la estructura requerida
@@ -96,14 +98,11 @@ def generar_recibos_cobro_hasta_actualidad():
                 })
 
             # Calcular el monto total de los detalles de cobro
-            total_monto = sum(Decimal(detalle["valor"])
-                            for detalle in detalles)
-            total_monto = Decimal(total_monto).quantize(
-                Decimal('0.01'))  # Redondea a 2 decimales
+            total_monto = sum(Decimal(detalle["valor"]) for detalle in detalles)
+            total_monto = Decimal(total_monto).quantize(Decimal('0.01'))  # Redondea a 2 decimales
 
             if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
-                print(
-                    f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
+                print(f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
                 continue
 
             # Crear un nuevo recibo de cobro
@@ -119,10 +118,10 @@ def generar_recibos_cobro_hasta_actualidad():
                     estudianteId=estudiante["id"],
                     detalles_cobro=detalles
                 )
-                print(
-                    f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+                print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
             except Exception as e:
                 print(f"Error al crear el recibo: {e}")
+
 
 
 
