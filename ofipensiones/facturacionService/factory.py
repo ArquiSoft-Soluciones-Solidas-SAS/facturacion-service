@@ -65,10 +65,11 @@ def generar_recibos_cobro_hasta_actualidad():
     estudiantes = obtener_estudiantes()
     detalles_cobro_data = obtener_detalles_cobro()  # Lista de detalles de cobro
 
-    # Hacemos prueba con el primer estudiante
-    estudiante = estudiantes[0]
+
+    # Iniciar una transacción
+    for estudiante in estudiantes:
         # Recorrer cada mes en la enumeración
-    for mes_nombre, mes_num in MESES:
+        for mes_nombre, mes_num in MESES:
             # Solo generar recibos hasta el mes actual
             if mes_num > mes_actual:
                 break  # Salir del bucle si el mes es posterior al actual
