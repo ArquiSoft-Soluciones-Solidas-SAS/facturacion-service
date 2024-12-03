@@ -2,7 +2,7 @@ from django.db import models
 
 class ReciboCobro(models.Model):
     fecha = models.DateField()
-    nmonto = models.DecimalField(max_digits=10, decimal_places=2)
+    nmonto = models.DecimalField(max_digits=12, decimal_places=2)
     detalle = models.TextField()
     estudianteId = models.CharField(max_length=150)
     detalles_cobro = models.JSONField()
