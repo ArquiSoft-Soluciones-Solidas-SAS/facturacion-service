@@ -1,4 +1,5 @@
 from collections import defaultdict
+from decimal import Decimal
 
 import factory
 from django.contrib.auth.models import User
@@ -94,7 +95,8 @@ def generar_recibos_cobro_hasta_actualidad():
                         })
 
                     # Calcular el monto total de los detalles de cobro
-                    total_monto = sum(float(detalle["valor"]) for detalle in detalles)
+                    total_monto = sum(Decimal(detalle["valor"]) for detalle in detalles)
+                    total_monto = Decimal(total_monto).quantize(Decimal('0.01'))  # Redondea a 2 decimales
 
                     if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
                         print(f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
@@ -118,6 +120,7 @@ def generar_recibos_cobro_hasta_actualidad():
                         print(f"Error al crear el recibo: {e}")
 
                     print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+                    print(ReciboCobro.objects.all())
         except Exception as e:
             print(f"Error dentro de la transacción: {e}")
             raise
