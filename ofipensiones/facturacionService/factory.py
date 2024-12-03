@@ -113,13 +113,14 @@ def generar_recibos_cobro_hasta_actualidad():
                             estudianteId=estudiante["id"],
                             detalles_cobro=detalles
                         )
-                        print(f"Recibo {recibo.id} generado.")
+                        print(f"Recibo {recibo} generado.")
                     except Exception as e:
                         print(f"Error al crear el recibo: {e}")
 
                     print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
         except Exception as e:
             print(f"Error dentro de la transacción: {e}")
+            raise
 
 
 def generar_recibos_pago():

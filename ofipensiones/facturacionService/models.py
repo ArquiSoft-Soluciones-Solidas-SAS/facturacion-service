@@ -8,7 +8,7 @@ class ReciboCobro(models.Model):
     detalles_cobro = models.JSONField()
 
     def calcular_monto_total(self):
-        return sum(detalle.valor for detalle in self.detalles_cobro.all())
+        return sum(detalle["valor"] for detalle in self.detalles_cobro)
 
     def __str__(self):
         return f"Recibo {self.id} - {self.nmonto}"
