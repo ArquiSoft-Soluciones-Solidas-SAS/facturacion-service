@@ -30,24 +30,25 @@ MESES = [
 
 
 def obtener_estudiantes():
-    r = requests.get(settings.PATH_ESTUDIANTES + "/listar-estudiantes/", headers={"Accept": "application/json"})
+    r = requests.get(settings.PATH_ESTUDIANTES + "/listar-estudiantes/",
+                     headers={"Accept": "application/json"})
     if r.status_code != 200:
         print("Error al obtener los estudiantes.")
         return []
     estudiantes = r.json()["estudiantes"]
     print("Estudiantes obtenidos exitosamente.")
-    print("Estudiantes: ", estudiantes)
     return estudiantes
 
 
-def obtener_detalles_filter(curso_id, mes_nombre):
-    r = requests.get(settings.PATH_CRONOGRAMAS + f"/cronogramas-cursos/detalles/curso/{curso_id}/mes/{mes_nombre}",
-                     headers={"Accept": "application/json"})
+def obtener_detalles_cobro():
+    r = requests.get(settings.PATH_CRONOGRAMAS + f"/cronogramas-cursos/detalles/", headers={"Accept": "application/json"})
     if r.status_code != 200:
-        print(f"Error al obtener los detalles de cobro para el estudiante {curso_id} en el mes {mes_nombre}.")
+        print(
+            f"Error al obtener los detalles de cobro.")
         return []
     detalles = r.json()["detalles"]
-    print(f"Detalles de cobro obtenidos exitosamente para el estudiante {curso_id} en el mes {mes_nombre}.")
+    print(
+        f"Detalles de cobro obtenidos exitosamente del curso.")
     return detalles
 
 
@@ -60,70 +61,69 @@ def generar_recibos_cobro_hasta_actualidad():
     fecha_actual = timezone.now().date()
     mes_actual = fecha_actual.month  # Obtener el mes actual
 
-    # Iniciar una transacción
-    with (transaction.atomic()):
-        try:
-            # Obtener todos los estudiantes de todas las instituciones
-            estudiantes = obtener_estudiantes()
+    # Obtener todos los estudiantes de todas las instituciones
+    estudiantes = obtener_estudiantes()
+    detalles_cobro = obtener_detalles_cobro()
 
-            # Recorrer cada estudiante
-            for estudiante in estudiantes:
-                # Recorrer cada mes en la enumeración
-                for mes_nombre, mes_num in MESES:
-                    # Solo generar recibos hasta el mes actual
-                    if mes_num > mes_actual:
-                        break  # Salir del bucle si el mes es posterior al actual
+    # Recorrer cada estudiante
+    for estudiante in estudiantes:
+        # Recorrer cada mes en la enumeración
+        for mes_nombre, mes_num in MESES:
+            # Solo generar recibos hasta el mes actual
+            if mes_num > mes_actual:
+                break  # Salir del bucle si el mes es posterior al actual
 
-                    # Obtener los detalles de cobro para el mes actual
-                    detalles_cobro = obtener_detalles_filter(estudiante["cursoEstudianteId"], mes_nombre)
+            # Obtener los detalles de cobro para el mes actual, haciendo un filter por mes_nombre y por cursoEstudianteId
+            detalles_cobro = [detalle for detalle in detalles_cobro if detalle["mes"] == mes_nombre and detalle["cursoId"] == estudiante["cursoEstudianteId"]]
+            print("detalles cobro del estudiante con id " + estudiante["id"] + " y mes " + mes_nombre + ": " + str(detalles_cobro))
 
-                    # Solo continuar si hay detalles de cobro para ese mes
-                    if not detalles_cobro:
-                        print(f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
-                        continue
+            # Solo continuar si hay detalles de cobro para ese mes
+            if not detalles_cobro:
+                print(
+                    f"No hay detalles de cobro para el estudiante {estudiante['nombreEstudiante']} en el mes {mes_nombre}.")
+                continue
 
-                    # Transformar los detalles a la estructura requerida
-                    detalles = []
-                    for detalle in detalles_cobro:
-                        detalles.append({
-                            "id": str(detalle["id"]),
-                            "mes": detalle["mes"],
-                            "valor": str(detalle["valor"]),
-                            "fechaCausacion": detalle["fechaCausacion"],
-                            "fechaLimite": detalle["fechaLimite"],
-                            "frecuencia": detalle.get("frecuencia", "N/A")
-                        })
+            # Transformar los detalles a la estructura requerida
+            detalles = []
+            for detalle in detalles_cobro:
+                detalles.append({
+                    "id": str(detalle["id"]),
+                    "mes": detalle["mes"],
+                    "valor": str(detalle["valor"]),
+                    "fechaCausacion": detalle["fechaCausacion"],
+                    "fechaLimite": detalle["fechaLimite"],
+                    "frecuencia": detalle.get("frecuencia", "N/A")
+                })
 
-                    # Calcular el monto total de los detalles de cobro
-                    total_monto = sum(Decimal(detalle["valor"]) for detalle in detalles)
-                    total_monto = Decimal(total_monto).quantize(Decimal('0.01'))  # Redondea a 2 decimales
+            # Calcular el monto total de los detalles de cobro
+            total_monto = sum(Decimal(detalle["valor"])
+                            for detalle in detalles)
+            total_monto = Decimal(total_monto).quantize(
+                Decimal('0.01'))  # Redondea a 2 decimales
 
-                    if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
-                        print(f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
-                        continue
+            if total_monto <= 0:  # Verificar que el monto total sea mayor que 0
+                print(
+                    f"No se generará recibo para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre} debido a un monto total inválido.")
+                continue
 
-                    # Crear un nuevo recibo de cobro
-                    try:
-                        recibo = ReciboCobro.objects.create(
-                            fecha=fecha_actual,
-                            nmonto=total_monto,
-                            detalle=(
-                                f"Recibo de cobro para el mes de {mes_nombre}, que le corresponde a {estudiante['nombreEstudiante']}, "
-                                f"del curso con id {estudiante['cursoEstudianteId']}, "
-                                f"de la institución {estudiante['nombreInstitucion']}."
-                            ),
-                            estudianteId=estudiante["id"],
-                            detalles_cobro=detalles
-                        )
-                        print(f"Recibo {recibo} generado.")
-                    except Exception as e:
-                        print(f"Error al crear el recibo: {e}")
+            # Crear un nuevo recibo de cobro
+            try:
+                recibo = ReciboCobro.objects.create(
+                    fecha=fecha_actual,
+                    nmonto=total_monto,
+                    detalle=(
+                        f"Recibo de cobro para el mes de {mes_nombre}, que le corresponde a {estudiante['nombreEstudiante']}, "
+                        f"del curso con id {estudiante['cursoEstudianteId']}, "
+                        f"de la institución {estudiante['nombreInstitucion']}."
+                    ),
+                    estudianteId=estudiante["id"],
+                    detalles_cobro=detalles
+                )
+                print(
+                    f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+            except Exception as e:
+                print(f"Error al crear el recibo: {e}")
 
-                    print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
-                    print(ReciboCobro.objects.all())
-        except Exception as e:
-            print(f"Error dentro de la transacción: {e}")
-            raise
 
 
 def generar_recibos_pago():
@@ -148,13 +148,15 @@ def generar_recibos_pago():
 
         num_al_dia = int(total_estudiantes * 0.7)
         estudiantes_al_dia = random.sample(estudiantes, num_al_dia)
-        estudiantes_no_al_dia = [estudiante for estudiante in estudiantes if estudiante not in estudiantes_al_dia]
+        estudiantes_no_al_dia = [
+            estudiante for estudiante in estudiantes if estudiante not in estudiantes_al_dia]
 
         with transaction.atomic():
             # Procesar estudiantes al día
             for estudiante in estudiantes_al_dia:
                 # Obtener todos los recibos de cobro de este estudiante
-                recibos_cobro = ReciboCobro.objects.filter(estudianteId=estudiante["id"])
+                recibos_cobro = ReciboCobro.objects.filter(
+                    estudianteId=estudiante["id"])
 
                 for recibo_cobro in recibos_cobro:
                     # Crear el recibo de pago
@@ -164,12 +166,14 @@ def generar_recibos_pago():
                         nmonto=recibo_cobro.nmonto,
                         detalle=f"Pago total por el estudiante {estudiante['nombreEstudiante']}."
                     )
-                    print(f"Recibo de pago total generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
+                    print(
+                        f"Recibo de pago total generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
 
             # Procesar estudiantes no al día
             for estudiante in estudiantes_no_al_dia:
                 # Obtener todos los recibos de cobro del estudiante
-                recibos_cobro = list(ReciboCobro.objects.filter(estudianteId=estudiante["id"]).order_by('fecha'))
+                recibos_cobro = list(ReciboCobro.objects.filter(
+                    estudianteId=estudiante["id"]).order_by('fecha'))
 
                 # Determinar el número aleatorio de meses a pagar (1 a 6)
                 meses_a_pagar = random.randint(1, 6)
@@ -191,4 +195,5 @@ def generar_recibos_pago():
                         nmonto=recibo_cobro.nmonto,
                         detalle=f"Pago de recibo cobro para {estudiante['nombreEstudiante']} desde enero hasta {fin}."
                     )
-                    print(f"Recibo de pago generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
+                    print(
+                        f"Recibo de pago generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
