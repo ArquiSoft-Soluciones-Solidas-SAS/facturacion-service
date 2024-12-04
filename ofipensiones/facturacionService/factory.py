@@ -206,7 +206,7 @@ def generar_recibos_pago():
                 # Pagar recibos de cobro desde enero hasta el número aleatorio de meses
                 for recibo_cobro in recibos_cobro[inicio:fin]:
                     # Crear el recibo de pago
-                    ReciboPago.objects.create(
+                    recibo_pago = ReciboPago.objects.create(
                         recibo_cobro=recibo_cobro,
                         fecha=fecha_actual,
                         nmonto=recibo_cobro.nmonto,
@@ -222,19 +222,18 @@ def generar_recibos_pago():
                         message={
                             "type": "recibo_pago_created",
                             "data": {
+                                "id": str(recibo_pago.id),
+                                "fecha": str(recibo_pago.fecha),
+                                "nmonto": str(recibo_pago.nmonto),
+                                "detalle": recibo_pago.detalle,
                                 "recibo_cobro" : {
                                     "id": str(recibo_cobro.id),
                                     "fecha": str(recibo_cobro.fecha),
                                     "nmonto": str(recibo_cobro.nmonto),
                                     "detalle": recibo_cobro.detalle,
                                     "estudianteId": str(recibo_cobro.estudianteId),
-                                    "detalles_cobro": recibo_cobro.detalles
-                                },
-                                "id": str(recibo_cobro.id),
-                                "fecha": str(fecha_actual),
-                                "nmonto": str(recibo_cobro.nmonto),
-                                "detalle": recibo_cobro.detalle,
-                                "estudianteId": str(estudiante["id"])
+                                    "detalles_cobro": recibo_cobro.detalles_cobro
+                                }
                             }
                         }
                     )
