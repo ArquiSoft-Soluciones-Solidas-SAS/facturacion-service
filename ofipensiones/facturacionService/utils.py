@@ -20,4 +20,6 @@ def send_to_rabbitmq(exchange, routing_key, message, rabbit_host='10.142.0.12', 
         body=json.dumps(message)
     )
 
+    print(f"Mensaje publicado en RabbitMQ: {message}")
+
     connection.close()
