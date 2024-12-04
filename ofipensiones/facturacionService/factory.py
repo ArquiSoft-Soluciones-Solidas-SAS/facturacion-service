@@ -226,7 +226,8 @@ def generar_recibos_pago():
                                 "fecha": str(recibo_pago.fecha),
                                 "nmonto": str(recibo_pago.nmonto),
                                 "detalle": recibo_pago.detalle,
-                                "recibo_cobro" : {
+                                "recibo_cobro" : [
+                                    {
                                     "id": str(recibo_cobro.id),
                                     "fecha": str(recibo_cobro.fecha),
                                     "nmonto": str(recibo_cobro.nmonto),
@@ -234,6 +235,7 @@ def generar_recibos_pago():
                                     "estudianteId": str(recibo_cobro.estudianteId),
                                     "detalles_cobro": recibo_cobro.detalles_cobro
                                 }
+                                ]
                             }
                         }
                     )
