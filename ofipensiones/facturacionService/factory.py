@@ -217,7 +217,6 @@ def generar_recibos_pago():
                 )
                 print(
                     f"Recibo de pago generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
-
                 # Enviar el recibo de pago a RabbitMQ
                 send_to_rabbitmq(
                     exchange='recibos_pago',
@@ -229,15 +228,7 @@ def generar_recibos_pago():
                             "fecha": str(recibo_pago.fecha),
                             "nmonto": str(recibo_pago.nmonto),
                             "detalle": recibo_pago.detalle,
-                            "recibo_cobro":
-                                {
-                                    "id": str(recibo_cobro.id),
-                                    "fecha": str(recibo_cobro.fecha),
-                                    "nmonto": str(recibo_cobro.nmonto),
-                                    "detalle": recibo_cobro.detalle,
-                                    "estudianteId": str(recibo_cobro.estudianteId),
-                                    "detalles_cobro": recibo_cobro.detalles_cobro
-                                }
+                            "recibo_cobro": recibo_cobro.to_dict()
                         }
                     }
                 )
