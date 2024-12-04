@@ -11,6 +11,7 @@ from django.conf import settings
 import requests
 import random
 from datetime import date
+from .utils import send_to_rabbitmq
 
 # Enumeración de meses
 MESES = [
@@ -120,6 +121,22 @@ def generar_recibos_cobro_hasta_actualidad():
                     detalles_cobro=detalles
                 )
                 print(f"Recibo {recibo.id} generado para el estudiante {estudiante['nombreEstudiante']} para el mes {mes_nombre}.")
+                # Enviar el recibo a RabbitMQ
+                send_to_rabbitmq(
+                    exchange='recibos_cobro',
+                    routing_key='recibo.cobro.created',
+                    message={
+                        "type": "recibo_cobro_created",
+                        "data": {
+                            "id": str(recibo.id),
+                            "fecha": str(recibo.fecha),
+                            "nmonto": str(recibo.nmonto),
+                            "detalle": recibo.detalle,
+                            "estudianteId": str(recibo.estudianteId),
+                            "detalles_cobro": detalles
+                        }
+                    }
+                )
             except Exception as e:
                 print(f"Error al crear el recibo: {e}")
 
@@ -197,3 +214,27 @@ def generar_recibos_pago():
                     )
                     print(
                         f"Recibo de pago generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
+
+                    # Enviar el recibo de pago a RabbitMQ
+                    send_to_rabbitmq(
+                        exchange='recibos_pago',
+                        routing_key='recibo.pago.created',
+                        message={
+                            "type": "recibo_pago_created",
+                            "data": {
+                                "recibo_cobro" : {
+                                    "id": str(recibo_cobro.id),
+                                    "fecha": str(recibo_cobro.fecha),
+                                    "nmonto": str(recibo_cobro.nmonto),
+                                    "detalle": recibo_cobro.detalle,
+                                    "estudianteId": str(recibo_cobro.estudianteId),
+                                    "detalles_cobro": recibo_cobro.detalles
+                                },
+                                "id": str(recibo_cobro.id),
+                                "fecha": str(fecha_actual),
+                                "nmonto": str(recibo_cobro.nmonto),
+                                "detalle": recibo_cobro.detalle,
+                                "estudianteId": str(estudiante["id"])
+                            }
+                        }
+                    )
