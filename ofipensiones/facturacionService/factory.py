@@ -180,7 +180,7 @@ def generar_recibos_pago():
 
             for recibo_cobro in recibos_cobro:
                 # Crear el recibo de pago
-                ReciboPago.objects.create(
+                recibo_pago = ReciboPago.objects.create(
                     recibo_cobro=recibo_cobro,
                     fecha=fecha_actual,
                     nmonto=recibo_cobro.nmonto,
@@ -188,6 +188,29 @@ def generar_recibos_pago():
                 )
                 print(
                     f"Recibo de pago total generado para {estudiante['nombreEstudiante']}: {recibo_cobro.nmonto}")
+                # Enviar el recibo de pago a RabbitMQ
+                print(f"Enviando recibo de pago {recibo_pago.id} a RabbitMQ...")
+                send_to_rabbitmq(
+                    exchange='recibos_pago',
+                    routing_key='recibo.pago.created',
+                    message={
+                        "type": "recibo_pago_created",
+                        "data": {
+                            "id": str(recibo_pago.id),
+                            "fecha": str(recibo_pago.fecha),
+                            "nmonto": str(recibo_pago.nmonto),
+                            "detalle": recibo_pago.detalle,
+                            "recibo_cobro": {
+                                "id": str(recibo_cobro.id),
+                                "fecha": str(recibo_cobro.fecha),
+                                "nmonto": str(recibo_cobro.nmonto),
+                                "detalle": recibo_cobro.detalle,
+                                "estudianteId": str(recibo_cobro.estudianteId),
+                                "detalles_cobro": recibo_cobro.detalles_cobro
+                            }
+                        }
+                    }
+                )
 
         # Procesar estudiantes no al día
         for estudiante in estudiantes_no_al_dia:
@@ -217,7 +240,6 @@ def generar_recibos_pago():
                         detalle=f"Pago total por el estudiante {estudiante['nombreEstudiante']}."
                     )
                     print(f"Recibo de pago creado: {recibo_pago.id}")
-
                     # Enviar el recibo de pago a RabbitMQ
                     print(f"Enviando recibo de pago {recibo_pago.id} a RabbitMQ...")
                     send_to_rabbitmq(
